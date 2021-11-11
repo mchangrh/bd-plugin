@@ -1,39 +1,26 @@
 /**
- * @name ChatFilter-beta
+ * @name userblock
  * @author blabdude
- * @authorId 278543574059057154
- * @version 3.5.6
- * @description Allows you to censor Words or block complete Messages/Statuses
- * @donate https://www.paypal.me/MircoWittrien
- * @patreon https://www.patreon.com/MircoWittrien
- * @website https://mwittrien.github.io/
- * @source https://gist.github.com/mchangrh/eff8f0b9d74f29ad87fa00a505b5e9c7
+ * @authorId 162333087621971979
+ * @version 0.1.0
+ * @description Block based on username by censoring text or emulating discord block
+ * @source https://github.com/mchangrh/userblock
+ * @updateUrl https://mchangrh.github.io/userblock/userblock.plugin.js
  */
 
 module.exports = (_ => {
 	const config = {
 		"info": {
-			"name": "ChatFilter-beta",
+			"name": "userblock",
 			"author": "blabdude",
-			"version": "3.5.6",
-			"description": "Allows you to censor Words or block complete Messages/Statuses"
+			"version": "0.1.0",
+			"description": "Block based on username by censoring text or emulating discord block"
 		},
 		"changeLog": {
-			"improved": {
-				"Block by username": "Fork that allows blocking by username"
-			}
 		}
 	};
 
-	return (window.Lightcord && !Node.prototype.isPrototypeOf(window.Lightcord) || window.LightCord && !Node.prototype.isPrototypeOf(window.LightCord) || window.Astra && !Node.prototype.isPrototypeOf(window.Astra)) ? class {
-		getName () {return config.info.name;}
-		getAuthor () {return config.info.author;}
-		getVersion () {return config.info.version;}
-		getDescription () {return "Do not use LightCord!";}
-		load () {BdApi.alert("Attention!", "By using LightCord you are risking your Discord Account, due to using a 3rd Party Client. Switch to an official Discord Client (https://discord.com/) with the proper BD Injection (https://betterdiscord.app/)");}
-		start() {}
-		stop() {}
-	} : !window.BDFDB_Global || (!window.BDFDB_Global.loaded && !window.BDFDB_Global.started) ? class {
+	return (!window.BDFDB_Global || (!window.BDFDB_Global.loaded && !window.BDFDB_Global.started)) ? class {
 		getName () {return config.info.name;}
 		getAuthor () {return config.info.author;}
 		getVersion () {return config.info.version;}
@@ -72,10 +59,22 @@ module.exports = (_ => {
 		}
 	} : (([Plugin, BDFDB]) => {
 		var oldBlockedMessages, words;
+
+		const configs = {
+			textblock: {value: true, description: "Replace text sent by the user (instant)"},
+			userblock: {value: true, description: "\"Discord Block\" the user (slower)"},
+		};
 		
 		return class ChatFilter extends Plugin {
 			onLoad () {
-				this.patchedModules = {
+				this.defaults = {
+					general: {
+						textblock: {value: true, description: "Replace text sent by the user (instant)"},
+						userblock: {value: true, description: "\"Discord Block\" the user (slower)"},
+					}
+				};
+				this.patchedModules =
+				 {
 					before: {
 						Message: "default",
 						MessageContent: "type",
@@ -104,6 +103,17 @@ module.exports = (_ => {
 					collapseStates: collapseStates,
 					children: _ => {
 						let settingsItems = [];
+						settingsItems.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.CollapseContainer, {
+							title: "Block Types",
+							collapseStates: collapseStates,
+							children: Object.keys(this.defaults.general).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsSaveItem, {
+								type: "Switch",
+								plugin: this,
+								keys: ["general", key],
+								label: this.defaults.general[key].description,
+								value: this.settings.general[key]
+							}))
+						}))
 						let values = {wordValue: ""};
 						settingsItems.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.CollapseContainer, {
 							title: `Add new blocked username`,
@@ -211,7 +221,9 @@ module.exports = (_ => {
 				let changeMessage = (change, cache) => {
 					if (change) {
 						if (!cache[message.id]) cache[message.id] = new BDFDB.DiscordObjects.Message(message);
-						stream.content.blocked = true;
+						if (this.settings.general.userblock) stream.content.blocked = true;
+						stream.content.content = content;
+						stream.content.embeds = embeds;
 					}
 				};
 				changeMessage(blocked, oldBlockedMessages);
@@ -227,6 +239,26 @@ module.exports = (_ => {
 				}
 			}
 
+			createStamp (tooltipText, label) {
+				return BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.TooltipContainer, {
+					text: tooltipText,
+					tooltipConfig: {style: "max-width: 400px"},
+					children: BDFDB.ReactUtils.createElement("span", {
+						className: BDFDB.DOMUtils.formatClassName(BDFDB.disCN.messagetimestamp, BDFDB.disCN.messagetimestampinline, BDFDB.disCN[`_chatfilter${label}stamp`]),
+						children: BDFDB.ReactUtils.createElement("span", {
+							className: BDFDB.disCN.messageedited,
+							children: `(${label})`
+						})
+					})
+				});
+			}
+
+			processMessageContent (e) {
+				if (e.instance.props.message && this.settings.general.textblock) {
+					if (oldBlockedMessages[e.instance.props.message.id]) e.returnvalue?.props.children.push(this.createStamp(oldBlockedMessages[e.instance.props.message.id].content, "blocked"));
+				}
+			}
+
 			parseMessage (message) {			
 				let blocked = false;
 				let content = (oldBlockedMessages[message.id] || {}).content || message.content;
@@ -237,7 +269,7 @@ module.exports = (_ => {
 						// author check
 						if (message.author.username == bWord) {
 							blocked = true;
-							content = "blocked" // block in replies
+							content = (this.settings.general.textblock) ? "​": content // replace with zwsp 
 							break;
 						}
 					}
@@ -249,7 +281,7 @@ module.exports = (_ => {
 				let wordValueInput;
 				return [
 					BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.FormComponents.FormItem, {
-						title: "Block/Censor:",
+						title: "Block:",
 						className: BDFDB.disCN.marginbottom8,
 						children: BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.TextInput, {
 							value: values.wordValue,
