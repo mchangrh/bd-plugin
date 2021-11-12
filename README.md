@@ -1,5 +1,5 @@
 # userblock
-userblock is a heavily modified version of [ChatFilter](https://github.com/mwittrien/BetterDiscordAddons/tree/master/Plugins/ChatFilter) by [mwritten](https://github.com/mwittrien)
+userblock is a heavily modified version of [ChatFilter](https://github.com/mwittrien/BetterDiscordAddons/tree/master/Plugins/ChatFilter) by [mwittrien](https://github.com/mwittrien)
 
 This version does not censor text but instead blocks messages from users - this can block users communicating over a bridge or annoying webhook spam. 
 
