@@ -1,0 +1,10 @@
+# userblock
+userblock is a heavily modified version of [ChatFilter](https://github.com/mwittrien/BetterDiscordAddons/tree/master/Plugins/ChatFilter) by [mwritten](https://github.com/mwittrien)
+
+This version does not censor text but instead blocks messages from users - this can block users communicating over a bridge or annoying webhook spam. 
+
+Usernames can be added and removed manually and there are two block types available - replace text and "discord block". Discord block will group blocked messages together similar to blocked Discord messages but takes a while to update. A combination of the two is recommended.
+
+This plugin for BetterDiscord still requires mwritten's 0BDFDB plugin to function.
+
+This can also be used in conjunction with [RemoveBlockedUsers](https://betterdiscord.app/plugin/RemoveBlockedUsers) to completely remove the "1 blocked message" prompts.
