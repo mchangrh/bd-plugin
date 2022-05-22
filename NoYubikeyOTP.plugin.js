@@ -2,7 +2,7 @@
  * @name NoYubikeyOTP
  * @author blabdude
  * @authorId 162333087621971979
- * @version 0.1.0
+ * @version 0.1.1
  * @description Block messages with Yubikey OTPs
  * @source https://github.com/mchangrh/bd-plugin
  * @updateUrl https://mchangrh.github.io/bd-plugin/NoYubikeyOTP.plugin.js
@@ -13,7 +13,7 @@ module.exports = (_ => {
 		"info": {
 			"name": "NoYubikeyOTP",
 			"author": "blabdude",
-			"version": "0.1.0",
+			"version": "0.1.1",
 			"description": "Disallow sending Yubikey OTP messages"
 		}
 	};
@@ -73,7 +73,7 @@ module.exports = (_ => {
 				BDFDB.PatchUtils.patch(this, e.instance, "handleSendMessage", {instead: i => {
 					const message = i.methodArguments[0].value
 					if (this.isYubikeyOTP(message)) {
-						e2.stopOriginalMethodCall();
+						i.stopOriginalMethodCall();
 						BDFDB.NotificationUtils.toast("Disallowed sending Yubikey OTP", {type: "danger", timeout: 5000})
 						return Promise.resolve({
 							shouldClear: (message.length === 44), // clear if exactly the length of OTP
