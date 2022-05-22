@@ -4,8 +4,8 @@
  * @authorId 162333087621971979
  * @version 0.1.0
  * @description Block based on username by censoring text or emulating discord block
- * @source https://github.com/mchangrh/userblock
- * @updateUrl https://mchangrh.github.io/userblock/userblock.plugin.js
+ * @source https://github.com/mchangrh/bd-plugin
+ * @updateUrl https://mchangrh.github.io/bd-plugin/userblock.plugin.js
  */
 
 module.exports = (_ => {

@@ -8,3 +8,9 @@ Usernames can be added and removed manually and there are two block types availa
 This plugin for BetterDiscord still requires mwritten's 0BDFDB plugin to function.
 
 This can also be used in conjunction with [RemoveBlockedUsers](https://betterdiscord.app/plugin/RemoveBlockedUsers) to completely remove the "1 blocked message" prompts.
+
+# NoYubikeyMessages
+
+Don't send yubikey OTPs in chat
+
+Stops sending message and clears it if the contents only contain OTP, stops sending if there are other contents.
