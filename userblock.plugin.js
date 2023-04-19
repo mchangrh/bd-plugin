@@ -2,29 +2,22 @@
  * @name userblock
  * @author blabdude
  * @authorId 162333087621971979
- * @version 0.1.0
+ * @version 0.2.0
  * @description Block based on username by censoring text or emulating discord block
  * @source https://github.com/mchangrh/bd-plugin
  * @updateUrl https://mchangrh.github.io/bd-plugin/userblock.plugin.js
  */
 
 module.exports = (_ => {
-	const config = {
-		"info": {
-			"name": "userblock",
-			"author": "blabdude",
-			"version": "0.1.0",
-			"description": "Block based on username by censoring text or emulating discord block"
-		},
-		"changeLog": {
-		}
+	const changeLog = {
 	};
 
 	return (!window.BDFDB_Global || (!window.BDFDB_Global.loaded && !window.BDFDB_Global.started)) ? class {
-		getName () {return config.info.name;}
-		getAuthor () {return config.info.author;}
-		getVersion () {return config.info.version;}
-		getDescription () {return `The Library Plugin needed for ${config.info.name} is missing. Open the Plugin Settings to download it. \n\n${config.info.description}`;}
+		constructor (meta) {for (let key in meta) this[key] = meta[key];}
+		getName () {return this.name;}
+		getAuthor () {return this.author;}
+		getVersion () {return this.version;}
+		getDescription () {return `The Library Plugin needed for ${this.name} is missing. Open the Plugin Settings to download it. \n\n${this.description}`;}
 		
 		downloadLibrary () {
 			require("request").get("https://mwittrien.github.io/BetterDiscordAddons/Library/0BDFDB.plugin.js", (e, r, b) => {
@@ -37,7 +30,7 @@ module.exports = (_ => {
 			if (!window.BDFDB_Global || !Array.isArray(window.BDFDB_Global.pluginQueue)) window.BDFDB_Global = Object.assign({}, window.BDFDB_Global, {pluginQueue: []});
 			if (!window.BDFDB_Global.downloadModal) {
 				window.BDFDB_Global.downloadModal = true;
-				BdApi.showConfirmationModal("Library Missing", `The Library Plugin needed for ${config.info.name} is missing. Please click "Download Now" to install it.`, {
+				BdApi.showConfirmationModal("Library Missing", `The Library Plugin needed for ${this.name} is missing. Please click "Download Now" to install it.`, {
 					confirmText: "Download Now",
 					cancelText: "Cancel",
 					onCancel: _ => {delete window.BDFDB_Global.downloadModal;},
@@ -47,13 +40,13 @@ module.exports = (_ => {
 					}
 				});
 			}
-			if (!window.BDFDB_Global.pluginQueue.includes(config.info.name)) window.BDFDB_Global.pluginQueue.push(config.info.name);
+			if (!window.BDFDB_Global.pluginQueue.includes(this.name)) window.BDFDB_Global.pluginQueue.push(this.name);
 		}
 		start () {this.load();}
 		stop () {}
 		getSettingsPanel () {
 			let template = document.createElement("template");
-			template.innerHTML = `<div style="color: var(--header-primary); font-size: 16px; font-weight: 300; white-space: pre; line-height: 22px;">The Library Plugin needed for ${config.info.name} is missing.\nPlease click <a style="font-weight: 500;">Download Now</a> to install it.</div>`;
+			template.innerHTML = `<div style="color: var(--header-primary); font-size: 16px; font-weight: 300; white-space: pre; line-height: 22px;">The Library Plugin needed for ${this.name} is missing.\nPlease click <a style="font-weight: 500;">Download Now</a> to install it.</div>`;
 			template.content.firstElementChild.querySelector("a").addEventListener("click", this.downloadLibrary);
 			return template.content.firstElementChild;
 		}
@@ -73,17 +66,16 @@ module.exports = (_ => {
 						userblock: {value: true, description: "\"Discord Block\" the user (slower)"},
 					}
 				};
-				this.patchedModules =
+				this.modulePatches =
 				 {
-					before: {
-						Message: "default",
-						MessageContent: "type",
-					},
-					after: {
-						Messages: "type",
-						MessageContent: "type",
-						Embed: "render"
-					}
+					before: [
+						"Message",
+						"MessageContent",
+						"Messages",
+					],
+					after: [
+						"MessageContent"
+					]
 				};
 			}
 			
@@ -203,11 +195,11 @@ module.exports = (_ => {
 			}
 
 			processMessages (e) {
-				e.returnvalue.props.children.props.channelStream = [].concat(e.returnvalue.props.children.props.channelStream);
-				for (let i in e.returnvalue.props.children.props.channelStream) {
-					let message = e.returnvalue.props.children.props.channelStream[i].content;
+				e.instance.props.channelStream = [].concat(e.instance.props.channelStream);
+				for (let i in e.instance.props.channelStream) {
+					let message = e.instance.props.channelStream[i].content;
 					if (message) {
-						if (BDFDB.ArrayUtils.is(message.attachments)) this.checkMessage(e.returnvalue.props.children.props.channelStream[i], message);
+						if (BDFDB.ArrayUtils.is(message.attachments)) this.checkMessage(e.instance.props.channelStream[i], message);
 						else if (BDFDB.ArrayUtils.is(message)) for (let j in message) {
 							let childMessage = message[j].content;
 							if (childMessage && BDFDB.ArrayUtils.is(childMessage.attachments)) this.checkMessage(message[j], childMessage);
@@ -231,10 +223,8 @@ module.exports = (_ => {
 
 			processMessage (e) {
 				let repliedMessage = e.instance.props.childrenRepliedMessage;
-				if (repliedMessage && repliedMessage.props && repliedMessage.props.children && repliedMessage.props.children.props && repliedMessage.props.children.props.referencedMessage && repliedMessage.props.children.props.referencedMessage.message && (oldBlockedMessages[repliedMessage.props.children.props.referencedMessage.message.id])) {
+				if (repliedMessage && repliedMessage.props && repliedMessage.props.children && repliedMessage.props.children.props && repliedMessage.props.children.props.referencedMessage && repliedMessage.props.children.props.referencedMessage.message && (oldBlockedMessages[repliedMessage.props.children.props.referencedMessage.message.id] || oldCensoredMessages[repliedMessage.props.children.props.referencedMessage.message.id])) {
 					let {blocked, content, embeds} = this.parseMessage(repliedMessage.props.children.props.referencedMessage.message);
-					// repliedMessage.props.children.props.referencedMessage.message.blocked = blocked;
-					// blocking on reply does nothing
 					repliedMessage.props.children.props.referencedMessage.message = new BDFDB.DiscordObjects.Message(Object.assign({}, repliedMessage.props.children.props.referencedMessage.message, {content, embeds}));
 				}
 			}
@@ -259,24 +249,24 @@ module.exports = (_ => {
 				}
 			}
 
-			parseMessage (message) {			
+			parseMessage (message) {
 				let blocked = false;
 				let content = (oldBlockedMessages[message.id] || {}).content || message.content;
 				let embeds = [].concat((oldBlockedMessages[message.id] || {}).embeds || message.embeds);
 				let isContent = content && typeof content == "string";
 				if (isContent || embeds.length) {
-					for (let bWord in words.blocked) {
-						// author check
+					for (let bWord of Object.keys(words.blocked)) {
 						if (message.author.username == bWord) {
 							blocked = true;
-							content = (this.settings.general.textblock) ? "​": content // replace with zwsp 
+							content = (this.settings.general.textblock) ? "" : content;
 							break;
 						}
 					}
+					if (blocked) return {blocked, content, embeds: []};
 				}
-				return {blocked, content, embeds: (blocked ? [] : embeds) };
+				return {blocked, content, embeds};
 			}
-			
+
 			createInputs (values) {
 				let wordValueInput;
 				return [
@@ -308,5 +298,5 @@ module.exports = (_ => {
 				BDFDB.DataUtils.save(words, this, "words");
 			}
 		};
-	})(window.BDFDB_Global.PluginUtils.buildPlugin(config));
+	})(window.BDFDB_Global.PluginUtils.buildPlugin(changeLog));
 })();
