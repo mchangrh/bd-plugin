@@ -14,3 +14,9 @@ This can also be used in conjunction with [RemoveBlockedUsers](https://betterdis
 Don't send yubikey OTPs in chat
 
 Stops sending message and clears it if the contents only contain OTP, stops sending if there are other contents.
+
+# [blockbotreply](https://mchangrh.github.io/bd-plugin/blockbotreply.plugin.js)
+
+Blocks bot replies to blocked users
+
+This is very useful for DeArrow bot or any other bots that constantly and automatically reply to users.
